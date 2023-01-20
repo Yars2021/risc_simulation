@@ -3,4 +3,10 @@
 
 .start:
     mov %rdi var_1
-    hlt
+    cmp %rdi %rsi
+    je .end
+
+    mov var_1 64
+
+    .end:
+        hlt
