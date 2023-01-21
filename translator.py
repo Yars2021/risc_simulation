@@ -172,7 +172,7 @@ def main(args):
         source = f.read()
 
     code = translate(source)
-    print("source LoC:", len(source.split("\n")), "code instr:", len(code))
+    print("source LoC:", len(source.split("\n")), "| code instr:", len(code))
     write_code(target, code)
 
 

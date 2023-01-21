@@ -6,7 +6,7 @@
     cmp %rdi %rsi
     je .end
 
-    mov var_1 64
+    mov var_1 32
 
     .end:
         hlt
