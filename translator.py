@@ -5,8 +5,6 @@
 
 """Транслятор asm в машинный код"""
 
-import sys
-
 from isa import Opcode, AddrMode, args_number, write_code, Term
 
 # Словарь символов, непосредственно транслируемых в машинный код
@@ -14,6 +12,7 @@ symbol2opcode = {
     "data": Opcode.DATA,
     "rd": Opcode.RD,
     "wr": Opcode.WR,
+    "nop": Opcode.NOP,
     "mov": Opcode.MOV,
     "add": Opcode.ADD,
     "sub": Opcode.SUB,
@@ -37,17 +36,22 @@ register_symbols = {
     "%reg3": "%reg3",
     "%reg4": "%reg4",
     "%reg5": "%reg5",
-    "%reg6": "%reg6",
-    "%reg7": "%reg7",
 
     "%rax": "%reg0",
     "%rbx": "%reg1",
     "%rcx": "%reg2",
     "%rdx": "%reg3",
     "%rsi": "%reg4",
-    "%rdi": "%reg5",
-    "%rsp": "%reg6",
-    "%rbp": "%reg7"
+    "%rdi": "%reg5"
+}
+
+registers2indexes = {
+    "%reg0": 0,
+    "%reg1": 1,
+    "%reg2": 2,
+    "%reg3": 3,
+    "%reg4": 4,
+    "%reg5": 5
 }
 
 
@@ -134,7 +138,7 @@ def translate(text):
                             AddrMode.PTR, 0)
         elif terms[i].arg1 in register_symbols.keys():
             terms[i] = Term(terms[i].line, terms[i].operation,
-                            terms[i].arg1, terms[i].arg2,
+                            registers2indexes[terms[i].arg1], terms[i].arg2,
                             AddrMode.REG, 0)
         else:
             terms[i] = Term(terms[i].line, terms[i].operation,
@@ -152,7 +156,7 @@ def translate(text):
                             terms[i].mode1, AddrMode.PTR)
         elif terms[i].arg2 in register_symbols.keys():
             terms[i] = Term(terms[i].line, terms[i].operation,
-                            terms[i].arg1, terms[i].arg2,
+                            terms[i].arg1, registers2indexes[terms[i].arg2],
                             terms[i].mode1, AddrMode.REG)
         else:
             terms[i] = Term(terms[i].line, terms[i].operation,
@@ -177,4 +181,5 @@ def main(args):
 
 
 if __name__ == '__main__':
-    main(sys.argv[1:])
+    main(["/home/yars/PycharmProjects/virtual_m/tests/test_code.asm",
+          "/home/yars/PycharmProjects/virtual_m/tests/test_instr.ins"])

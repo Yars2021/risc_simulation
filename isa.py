@@ -11,6 +11,7 @@ class Opcode(str, Enum):
     RD = "rd"
     WR = "wr"
 
+    NOP = "nop"
     MOV = "mov"
     ADD = "add"
     SUB = "sub"
@@ -31,6 +32,7 @@ class Opcode(str, Enum):
 
 args_number = {
     Opcode.DATA.value: 1,
+    Opcode.NOP.value: 0,
     Opcode.RD.value: 0,
     Opcode.WR.value: 0,
     Opcode.MOV.value: 2,
