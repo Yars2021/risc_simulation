@@ -109,7 +109,7 @@ class DataPath:
             self.alu = self.left - self.right
         elif operation is ALUOperations.MUL:
             self.alu = self.left * self.right
-        elif operation is ALUOperations.SUB:
+        elif operation is ALUOperations.DIV:
             self.alu = self.left / self.right
         elif operation is ALUOperations.MOV:
             self.alu = self.left
