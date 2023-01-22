@@ -17,6 +17,7 @@ class SelOptions(int, Enum):
     ARG = 3
     REG = 4
 
+
 class ALUOperations(int, Enum):
     ADD = 0
     SUB = 1
@@ -35,7 +36,6 @@ class DataPath:
         self.gp_regs = [0] * 6
         self.addr_reg = 0
         self.buf_reg = 0
-        self.ip_reg = 0
         self.reg_block_l = 0
         self.reg_block_r = 0
 
@@ -44,7 +44,6 @@ class DataPath:
         self.alu = 0
 
         self.arg = 0
-        self.ip = 0
 
         self.input_buffer = input_buffer
         self.output_buffer = []
@@ -74,9 +73,6 @@ class DataPath:
 
     def latch_buf(self):
         self.buf_reg = self.alu
-
-    def latch_ip(self):
-        self.ip_reg = self.ip
 
     def flag_neg(self):
         return self.buf_reg < 0
@@ -119,6 +115,35 @@ class DataPath:
 
 
 class ControlUnit:
+    def __init__(self, program, data_path):
+        self.program = program
+        self.data_path = data_path
+        self.instr_ptr = 0
+        self._tick = 0
+
+    def tick(self):
+        self._tick += 1
+
+    def get_tick(self):
+        return self._tick
+
+    def latch_ip(self, inc):
+        if inc:
+            self.instr_ptr += 1
+        else:
+            instr = self.program[self.instr_ptr]
+            self.instr_ptr = instr["term"][0]
+
+    def decode_and_execute_instruction(self):
+        instr = self.program[self.instr_ptr]
+        opcode = instr["opcode"]
+
+        if opcode is Opcode.HLT:
+            raise StopIteration
+
+        if opcode is Opcode.JMP:
+            self.instr_ptr = instr["term"][2]
+
     def __repr__(self):
         return 0
 
