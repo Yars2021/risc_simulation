@@ -1,12 +1,12 @@
 .data:
-    var_1 "3"
+    var 21
+    a 42
 
 .start:
-    mov %rdi var_1
-    cmp %rdi %rsi
-    je .end
-
-    mov var_1 32
-
-    .end:
-        hlt
+    mov %rdi var
+    mov %rax a
+    mov %rsi 123
+    mov %rbx %rsi
+    mov var %rdi
+    mov %rcx var
+    hlt

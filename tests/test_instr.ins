@@ -4,7 +4,7 @@
         "term": [
             0,
             "jmp",
-            2,
+            3,
             0,
             "pointer",
             "literal"
@@ -15,7 +15,18 @@
         "term": [
             1,
             "data",
-            51,
+            21,
+            0,
+            "literal",
+            "literal"
+        ]
+    },
+    {
+        "opcode": "data",
+        "term": [
+            2,
+            "data",
+            42,
             0,
             "literal",
             "literal"
@@ -24,7 +35,7 @@
     {
         "opcode": "mov",
         "term": [
-            2,
+            3,
             "mov",
             5,
             1,
@@ -33,25 +44,14 @@
         ]
     },
     {
-        "opcode": "cmp",
-        "term": [
-            3,
-            "cmp",
-            5,
-            4,
-            "register",
-            "register"
-        ]
-    },
-    {
-        "opcode": "je",
+        "opcode": "mov",
         "term": [
             4,
-            "je",
-            6,
+            "mov",
             0,
-            "pointer",
-            "literal"
+            2,
+            "register",
+            "pointer"
         ]
     },
     {
@@ -59,16 +59,49 @@
         "term": [
             5,
             "mov",
-            1,
-            32,
-            "pointer",
+            4,
+            123,
+            "register",
             "literal"
+        ]
+    },
+    {
+        "opcode": "mov",
+        "term": [
+            6,
+            "mov",
+            1,
+            4,
+            "register",
+            "register"
+        ]
+    },
+    {
+        "opcode": "mov",
+        "term": [
+            7,
+            "mov",
+            1,
+            5,
+            "pointer",
+            "register"
+        ]
+    },
+    {
+        "opcode": "mov",
+        "term": [
+            8,
+            "mov",
+            2,
+            1,
+            "register",
+            "pointer"
         ]
     },
     {
         "opcode": "hlt",
         "term": [
-            6,
+            9,
             "hlt",
             0,
             0,

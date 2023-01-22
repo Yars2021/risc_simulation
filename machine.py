@@ -44,6 +44,8 @@ class DataPath:
         self.alu = 0
 
         self.arg = 0
+        self.l_arg = 0
+        self.r_arg = 0
 
         self.input_buffer = input_buffer
         self.output_buffer = []
@@ -81,7 +83,7 @@ class DataPath:
         return self.buf_reg == 0
 
     def rd(self):
-        return self.memory[self.addr_reg]
+        return self.memory[self.addr_reg]["term"][2]
 
     def wr(self):
         self.memory[self.addr_reg] = self.buf_reg
@@ -91,12 +93,16 @@ class DataPath:
             self.left = self.rd()
         elif l_src is SelOptions.REG:
             self.left = self.reg_block_l
+        elif l_src is SelOptions.ARG:
+            self.left = self.l_arg
 
     def select_right(self, r_src: SelOptions):
         if r_src is SelOptions.MEM:
             self.right = self.rd()
         elif r_src is SelOptions.REG:
             self.right = self.reg_block_r
+        elif r_src is SelOptions.ARG:
+            self.right = self.r_arg
 
     def calculate(self, operation: ALUOperations):
         if operation is ALUOperations.ADD:
@@ -115,8 +121,8 @@ class DataPath:
 
 
 class ControlUnit:
-    def __init__(self, program, data_path):
-        self.program = program
+    def __init__(self, data_path: DataPath):
+        self.program = data_path.memory
         self.data_path = data_path
         self.instr_ptr = 0
         self._tick = 0
@@ -132,7 +138,7 @@ class ControlUnit:
             self.instr_ptr += 1
         else:
             instr = self.program[self.instr_ptr]
-            self.instr_ptr = instr["term"][0]
+            self.instr_ptr = instr["term"][2]
 
     def decode_and_execute_instruction(self):
         instr = self.program[self.instr_ptr]
@@ -141,11 +147,215 @@ class ControlUnit:
         if opcode is Opcode.HLT:
             raise StopIteration
 
+        if opcode is Opcode.NOP:
+            self.latch_ip(True)
+            self.tick()
+
+        if opcode is Opcode.RD:
+            w_sel = 0  # Данные при вводе попадают в %rax
+            self.data_path.latch_reg(w_sel, SelOptions.INP)
+            self.latch_ip(True)
+            self.tick()
+
+        if opcode is Opcode.WR:
+            l_sel = 5  # Данные на вывод берутся из %rdi
+            self.data_path.read_l_reg(l_sel)
+            self.data_path.select_left(SelOptions.REG)
+            self.data_path.calculate(ALUOperations.MOV)
+            self.data_path.latch_buf()
+            self.tick()
+
+            self.data_path.output()
+            self.latch_ip(True)
+            self.tick()
+
         if opcode is Opcode.JMP:
-            self.instr_ptr = instr["term"][2]
+            self.latch_ip(False)
+            self.tick()
+
+        if opcode is Opcode.JE:
+            if self.data_path.flag_zero():
+                self.latch_ip(False)
+            else:
+                self.latch_ip(True)
+            self.tick()
+
+        if opcode is Opcode.JNE:
+            if self.data_path.flag_zero():
+                self.latch_ip(True)
+            else:
+                self.latch_ip(False)
+            self.tick()
+
+        if opcode is Opcode.JG:
+            if self.data_path.flag_zero() or self.data_path.flag_neg():
+                self.latch_ip(True)
+            else:
+                self.latch_ip(False)
+            self.tick()
+
+        if opcode is Opcode.JL:
+            if self.data_path.flag_neg():
+                self.latch_ip(False)
+            else:
+                self.latch_ip(True)
+            self.tick()
+
+        if opcode is Opcode.JNG:
+            if self.data_path.flag_zero() or self.data_path.flag_neg():
+                self.latch_ip(False)
+            else:
+                self.latch_ip(True)
+            self.tick()
+
+        if opcode is Opcode.JNL:
+            if self.data_path.flag_neg():
+                self.latch_ip(True)
+            else:
+                self.latch_ip(False)
+            self.tick()
+
+        """         
+        mov REG REG
+        mov REG VAR
+        mov REG ARG
+        mov VAR REG
+        mov VAR VAR
+        mov VAR ARG
+        """
+        if opcode is Opcode.MOV:
+            assert not (instr["term"][4] is AddrMode.LIT), "Invalid mov arguments!"
+
+            if instr["term"][5] is AddrMode.REG:
+                self.data_path.read_l_reg(instr["term"][3])
+                self.data_path.select_left(SelOptions.REG)
+            elif instr["term"][5] is AddrMode.PTR:
+                self.data_path.arg = instr["term"][3]
+                self.data_path.latch_addr(SelOptions.ARG)
+                self.data_path.select_left(SelOptions.MEM)
+            elif instr["term"][5] is AddrMode.LIT:
+                self.data_path.l_arg = instr["term"][3]
+                self.data_path.select_left(SelOptions.ARG)
+
+            self.data_path.calculate(ALUOperations.MOV)
+            self.data_path.latch_buf()
+            self.tick()
+
+            if instr["term"][4] is AddrMode.REG:
+                w_sel = instr["term"][2]
+                self.data_path.latch_reg(w_sel, SelOptions.BUF)
+            elif instr["term"][4] is AddrMode.PTR:
+                self.data_path.arg = instr["term"][2]
+                self.data_path.latch_addr(SelOptions.ARG)
+                self.data_path.wr()
+
+            self.latch_ip(True)
+            self.tick()
+
+        """
+        op REG REG
+        op REG VAR
+        op REG ARG
+        op VAR REG
+        op VAR ARG
+        
+        op VAR VAR нет, т.к. архитектура не позволяет
+        """
+        if opcode in {Opcode.ADD, Opcode.SUB, Opcode.MUL, Opcode.DIV, Opcode.CMP}:
+            assert not (instr["term"][4] is AddrMode.PTR
+                        and instr["term"][5] is AddrMode.PTR), "Operation VAR x VAR is not possible!"
+            assert not (instr["term"][4] is AddrMode.LIT
+                        and instr["term"][5] is AddrMode.LIT), "Operation LIT x LIT is not possible!"
+
+            if instr["term"][4] is AddrMode.REG:
+                self.data_path.read_l_reg(instr["term"][2])
+                self.data_path.select_left(SelOptions.REG)
+            elif instr["term"][4] is AddrMode.PTR:
+                self.data_path.arg = instr["term"][2]
+                self.data_path.latch_addr(SelOptions.ARG)
+                self.data_path.select_left(SelOptions.MEM)
+            elif instr["term"][4] is AddrMode.LIT:
+                self.data_path.l_arg = instr["term"][2]
+                self.data_path.select_left(SelOptions.ARG)
+
+            if instr["term"][5] is AddrMode.REG:
+                self.data_path.read_r_reg(instr["term"][3])
+                self.data_path.select_right(SelOptions.REG)
+            elif instr["term"][5] is AddrMode.PTR:
+                self.data_path.arg = instr["term"][3]
+                self.data_path.latch_addr(SelOptions.ARG)
+                self.data_path.select_right(SelOptions.MEM)
+            elif instr["term"][5] is AddrMode.LIT:
+                self.data_path.l_arg = instr["term"][3]
+                self.data_path.select_right(SelOptions.ARG)
+
+            if opcode is Opcode.ADD:
+                self.data_path.calculate(ALUOperations.ADD)
+            elif opcode in {Opcode.SUB, Opcode.CMP}:
+                self.data_path.calculate(ALUOperations.SUB)
+            elif opcode is Opcode.MUL:
+                self.data_path.calculate(ALUOperations.MOV)
+            elif opcode is Opcode.DIV:
+                self.data_path.calculate(ALUOperations.DIV)
+
+            self.data_path.latch_buf()
+            self.tick()
+
+            if not (opcode is Opcode.CMP):
+                if instr["term"][4] is AddrMode.REG:
+                    w_sel = instr["term"][2]
+                    self.data_path.latch_reg(w_sel, SelOptions.BUF)
+                elif instr["term"][4] is AddrMode.PTR:
+                    self.data_path.arg = instr["term"][2]
+                    self.data_path.latch_addr(SelOptions.ARG)
+                    self.data_path.wr()
+
+            self.latch_ip(True)
+            self.tick()
 
     def __repr__(self):
-        return 0
+        state = "{{TICK: {}, IP: {}, ADDR: {}, BUF: {}, REG0 (RAX): {}, REG1 (RBX): {}, " \
+                "REG2 (RCX): {}, REG3 (RDX): {}, REG4 (RSI): {}, REG5 (RDI): {}, N: {}, Z: {}}}".format(
+            self._tick,
+            self.instr_ptr,
+            self.data_path.addr_reg,
+            self.data_path.buf_reg,
+            self.data_path.gp_regs[0],
+            self.data_path.gp_regs[1],
+            self.data_path.gp_regs[2],
+            self.data_path.gp_regs[3],
+            self.data_path.gp_regs[4],
+            self.data_path.gp_regs[5],
+            self.data_path.flag_neg(),
+            self.data_path.flag_zero()
+        )
+
+        print(state)
+        print(self.data_path.memory)
+
+        return "{} {}"
+
+
+def simulation(code, memory_size, input_buffer, limit):
+    data_path = DataPath(memory_size, input_buffer, code)
+    control_unit = ControlUnit(data_path)
+    instr_counter = 0
+
+    control_unit.__repr__()
+    logging.debug('%s', control_unit)
+    try:
+        while True:
+            assert limit > instr_counter, "Limit exceeded!"
+            control_unit.decode_and_execute_instruction()
+            control_unit.__repr__()
+            instr_counter += 1
+            logging.debug('%s', control_unit)
+    except EOFError:
+        logging.warning('Input buffer is empty!')
+    except StopIteration:
+        pass
+    logging.info('output_buffer: %s', repr(''.join(data_path.output_buffer)))
+    return ''.join(data_path.output_buffer), instr_counter, control_unit.get_tick()
 
 
 def main(args):
@@ -159,7 +369,14 @@ def main(args):
         for char in input_text:
             input_token.append(char)
 
+    output, instr_counter, ticks = simulation(code, memory_size=128, input_buffer=[], limit=1024)
+
+    print(''.join(output))
+    print("instr_counter: ", instr_counter, "ticks:", ticks)
+
 
 if __name__ == '__main__':
-    logging.getLogger().setLevel(logging.DEBUG)
-    main(sys.argv[1:])
+    #logging.getLogger().setLevel(logging.DEBUG)
+    #main(sys.argv[1:])
+    main(["/home/yars/PycharmProjects/virtual_m/tests/test_instr.ins",
+          "/home/yars/PycharmProjects/virtual_m/tests/test_instr.ins"])
