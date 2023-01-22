@@ -12,16 +12,17 @@ from isa import Opcode, AddrMode, Term, read_code
 
 class SelOptions(int, Enum):
     INP = 0
-    ALU = 1
+    BUF = 1
     MEM = 2
     ARG = 3
-
+    REG = 4
 
 class ALUOperations(int, Enum):
     ADD = 0
     SUB = 1
     MUL = 2
     DIV = 3
+    MOV = 4
 
 
 class DataPath:
@@ -30,79 +31,91 @@ class DataPath:
         assert len(data) < memory_size, "Not enough memory to contain this much data"
         self.memory_size = memory_size
         self.memory = data + [0] * (memory_size - len(data))
+
         self.gp_regs = [0] * 6
         self.addr_reg = 0
         self.buf_reg = 0
-        self.out_reg = 0
+        self.ip_reg = 0
+        self.reg_block_l = 0
+        self.reg_block_r = 0
+
+        self.left = 0
+        self.right = 0
         self.alu = 0
+
         self.arg = 0
-        self.flag_neg = 0
-        self.flag_zero = 0
+        self.ip = 0
+
         self.input_buffer = input_buffer
         self.output_buffer = []
 
-    def put_arg(self, value):
-        self.arg = value
-
     def read_l_reg(self, l_sel):
         assert 0 <= l_sel <= 6, "The machine only has 6 registers (r0 - r5)"
-        return self.gp_regs[l_sel]
+        self.reg_block_l = self.gp_regs[l_sel]
 
     def read_r_reg(self, r_sel):
         assert 0 <= r_sel <= 6, "The machine only has 6 registers (r0 - r5)"
-        return self.gp_regs[r_sel]
+        self.reg_block_r = self.gp_regs[r_sel]
 
-    def latch_reg(self, w_reg, sel_src: SelOptions):
-        assert 0 <= w_reg <= 5, "The machine only has 6 registers (r0 - r5)"
+    def latch_reg(self, w_sel, sel_src: SelOptions):
+        assert 0 <= w_sel <= 5, "The machine only has 6 registers (r0 - r5)"
         if sel_src is SelOptions.MEM:
-            self.gp_regs[w_reg] = self.memory[self.addr_reg]
-        elif sel_src is SelOptions.ALU:
-            self.gp_regs[w_reg] = self.alu
+            self.gp_regs[w_sel] = self.memory[self.addr_reg]
+        elif sel_src is SelOptions.BUF:
+            self.gp_regs[w_sel] = self.buf_reg
         elif sel_src is SelOptions.INP:
-            self.gp_regs[w_reg] = ord(self.input_buffer.pop(0)[0])
+            self.gp_regs[w_sel] = ord(self.input_buffer.pop(0)[0])
 
     def latch_addr(self, sel_addr: SelOptions):
-        if sel_addr is SelOptions.ALU:
-            self.addr_reg = self.alu
+        if sel_addr is SelOptions.BUF:
+            self.addr_reg = self.buf_reg
         elif sel_addr is SelOptions.ARG:
             self.addr_reg = self.arg
-
-    def latch_out(self):
-        self.out_reg = self.alu
 
     def latch_buf(self):
         self.buf_reg = self.alu
 
-    def upd_flags(self):
-        if self.alu == 0:
-            self.flag_zero = 1
-        else:
-            self.flag_zero = 0
+    def latch_ip(self):
+        self.ip_reg = self.ip
 
-        if self.alu < 0:
-            self.flag_neg = 1
-        else:
-            self.flag_neg = 0
+    def flag_neg(self):
+        return self.buf_reg < 0
+
+    def flag_zero(self):
+        return self.buf_reg == 0
+
+    def rd(self):
+        return self.memory[self.addr_reg]
 
     def wr(self):
         self.memory[self.addr_reg] = self.buf_reg
 
-    def calculate(self, left, right, op: ALUOperations):
-        if op is ALUOperations.ADD:
-            self.alu = left + right
-        elif op is ALUOperations.SUB:
-            self.alu = left - right
-        elif op is ALUOperations.MUL:
-            self.alu = left * right
-        elif op is ALUOperations.SUB:
-            self.alu = left / right
-        else:
-            self.alu = left
+    def select_left(self, l_src: SelOptions):
+        if l_src is SelOptions.MEM:
+            self.left = self.rd()
+        elif l_src is SelOptions.REG:
+            self.left = self.reg_block_l
 
-        self.upd_flags()
+    def select_right(self, r_src: SelOptions):
+        if r_src is SelOptions.MEM:
+            self.right = self.rd()
+        elif r_src is SelOptions.REG:
+            self.right = self.reg_block_r
+
+    def calculate(self, operation: ALUOperations):
+        if operation is ALUOperations.ADD:
+            self.alu = self.left + self.right
+        elif operation is ALUOperations.SUB:
+            self.alu = self.left - self.right
+        elif operation is ALUOperations.MUL:
+            self.alu = self.left * self.right
+        elif operation is ALUOperations.SUB:
+            self.alu = self.left / self.right
+        elif operation is ALUOperations.MOV:
+            self.alu = self.left
 
     def output(self):
-        self.output_buffer.append(chr(self.out_reg))
+        self.output_buffer.append(chr(self.buf_reg))
 
 
 class ControlUnit:
