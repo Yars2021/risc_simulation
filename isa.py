@@ -60,7 +60,7 @@ class AddrMode(str, Enum):
     REG = "register"    # Регистр
 
 
-class Term(namedtuple('Term', 'line operation arg1 arg2 mode1 mode2')):
+class Term(namedtuple('Term', 'line arg1 arg2 mode1 mode2')):
     """Описание выражения из исходного текста программы."""
 
 
@@ -78,8 +78,7 @@ def read_code(filename):
     for instr in code:
         instr['opcode'] = Opcode(instr['opcode'])
         if 'term' in instr:
-            instr['term'] = Term(instr['term'][0], instr['term'][1],
-                                 instr['term'][2], instr['term'][3],
-                                 AddrMode(instr['term'][4]), AddrMode(instr['term'][5]))
+            instr['term'] = Term(instr['term'][0], instr['term'][1], instr['term'][2],
+                                 AddrMode(instr['term'][3]), AddrMode(instr['term'][4]))
 
     return code
