@@ -176,6 +176,4 @@ def main(args):
 
 
 if __name__ == '__main__':
-   # main(sys.argv[1:])
-    main(["/home/yars/PycharmProjects/virtual_m/tests/test_prob2.asm",
-          "/home/yars/PycharmProjects/virtual_m/tests/output_prob2.ins"])
+    main(sys.argv[1:])

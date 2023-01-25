@@ -25,7 +25,7 @@
             jmp .loop
 
     .exit_loop:
-        mov %rdi result
+        mov %rou result
         wrn
 
     hlt

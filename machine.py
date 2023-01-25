@@ -399,9 +399,9 @@ def main(args):
     print("".join(output))
     print("\nexecuted instructions:", instr_counter, "\nticks:", ticks)
 
+    return output
+
 
 if __name__ == '__main__':
     logging.getLogger().setLevel(logging.DEBUG)
-    #main(sys.argv[1:])
-    main(["/home/yars/PycharmProjects/virtual_m/tests/output_prob2.ins",
-          "/home/yars/PycharmProjects/virtual_m/tests/input_file.txt"])
+    main(sys.argv[1:])
