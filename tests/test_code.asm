@@ -3,10 +3,8 @@
     a 42
 
 .start:
-    mov %rdi var
-    mov %rax a
-    mov %rsi 123
-    mov %rbx %rsi
-    mov var %rdi
-    mov %rcx var
+    mov %rdi 54
+    wr
+    mov %rdi 53
+    wr
     hlt

@@ -83,10 +83,15 @@ class DataPath:
         return self.buf_reg == 0
 
     def rd(self):
-        return self.memory[self.addr_reg]["term"][2]
+        return self.memory[self.addr_reg]["term"][1]
 
     def wr(self):
-        self.memory[self.addr_reg] = self.buf_reg
+        new_term = Term(self.memory[self.addr_reg]["term"][0],
+                        self.buf_reg,
+                        self.memory[self.addr_reg]["term"][2],
+                        self.memory[self.addr_reg]["term"][3],
+                        self.memory[self.addr_reg]["term"][4])
+        self.memory[self.addr_reg] = {"opcode": self.memory[self.addr_reg]["opcode"], "term": new_term}
 
     def select_left(self, l_src: SelOptions):
         if l_src is SelOptions.MEM:
@@ -120,6 +125,7 @@ class DataPath:
         self.output_buffer.append(chr(self.buf_reg))
 
 
+
 class ControlUnit:
     def __init__(self, data_path: DataPath):
         self.program = data_path.memory
@@ -138,7 +144,7 @@ class ControlUnit:
             self.instr_ptr += 1
         else:
             instr = self.program[self.instr_ptr]
-            self.instr_ptr = instr["term"][2]
+            self.instr_ptr = instr["term"][1]
 
     def decode_and_execute_instruction(self):
         instr = self.program[self.instr_ptr]
@@ -224,28 +230,28 @@ class ControlUnit:
         mov VAR ARG
         """
         if opcode is Opcode.MOV:
-            assert not (instr["term"][4] is AddrMode.LIT), "Invalid mov arguments!"
+            assert not (instr["term"][3] is AddrMode.LIT), "Invalid mov arguments!"
 
-            if instr["term"][5] is AddrMode.REG:
-                self.data_path.read_l_reg(instr["term"][3])
+            if instr["term"][4] is AddrMode.REG:
+                self.data_path.read_l_reg(instr["term"][2])
                 self.data_path.select_left(SelOptions.REG)
-            elif instr["term"][5] is AddrMode.PTR:
-                self.data_path.arg = instr["term"][3]
+            elif instr["term"][4] is AddrMode.PTR:
+                self.data_path.arg = instr["term"][2]
                 self.data_path.latch_addr(SelOptions.ARG)
                 self.data_path.select_left(SelOptions.MEM)
-            elif instr["term"][5] is AddrMode.LIT:
-                self.data_path.l_arg = instr["term"][3]
+            elif instr["term"][4] is AddrMode.LIT:
+                self.data_path.l_arg = instr["term"][2]
                 self.data_path.select_left(SelOptions.ARG)
 
             self.data_path.calculate(ALUOperations.MOV)
             self.data_path.latch_buf()
             self.tick()
 
-            if instr["term"][4] is AddrMode.REG:
-                w_sel = instr["term"][2]
+            if instr["term"][3] is AddrMode.REG:
+                w_sel = instr["term"][1]
                 self.data_path.latch_reg(w_sel, SelOptions.BUF)
-            elif instr["term"][4] is AddrMode.PTR:
-                self.data_path.arg = instr["term"][2]
+            elif instr["term"][3] is AddrMode.PTR:
+                self.data_path.arg = instr["term"][1]
                 self.data_path.latch_addr(SelOptions.ARG)
                 self.data_path.wr()
 
@@ -262,31 +268,31 @@ class ControlUnit:
         op VAR VAR нет, т.к. архитектура не позволяет
         """
         if opcode in {Opcode.ADD, Opcode.SUB, Opcode.MUL, Opcode.DIV, Opcode.CMP}:
-            assert not (instr["term"][4] is AddrMode.PTR
-                        and instr["term"][5] is AddrMode.PTR), "Operation VAR x VAR is not possible!"
-            assert not (instr["term"][4] is AddrMode.LIT
-                        and instr["term"][5] is AddrMode.LIT), "Operation LIT x LIT is not possible!"
+            assert not (instr["term"][3] is AddrMode.PTR
+                        and instr["term"][4] is AddrMode.PTR), "Operation VAR x VAR is not possible!"
+            assert not (instr["term"][3] is AddrMode.LIT
+                        and instr["term"][4] is AddrMode.LIT), "Operation LIT x LIT is not possible!"
+
+            if instr["term"][3] is AddrMode.REG:
+                self.data_path.read_l_reg(instr["term"][1])
+                self.data_path.select_left(SelOptions.REG)
+            elif instr["term"][3] is AddrMode.PTR:
+                self.data_path.arg = instr["term"][1]
+                self.data_path.latch_addr(SelOptions.ARG)
+                self.data_path.select_left(SelOptions.MEM)
+            elif instr["term"][3] is AddrMode.LIT:
+                self.data_path.l_arg = instr["term"][1]
+                self.data_path.select_left(SelOptions.ARG)
 
             if instr["term"][4] is AddrMode.REG:
-                self.data_path.read_l_reg(instr["term"][2])
-                self.data_path.select_left(SelOptions.REG)
+                self.data_path.read_r_reg(instr["term"][2])
+                self.data_path.select_right(SelOptions.REG)
             elif instr["term"][4] is AddrMode.PTR:
                 self.data_path.arg = instr["term"][2]
                 self.data_path.latch_addr(SelOptions.ARG)
-                self.data_path.select_left(SelOptions.MEM)
+                self.data_path.select_right(SelOptions.MEM)
             elif instr["term"][4] is AddrMode.LIT:
                 self.data_path.l_arg = instr["term"][2]
-                self.data_path.select_left(SelOptions.ARG)
-
-            if instr["term"][5] is AddrMode.REG:
-                self.data_path.read_r_reg(instr["term"][3])
-                self.data_path.select_right(SelOptions.REG)
-            elif instr["term"][5] is AddrMode.PTR:
-                self.data_path.arg = instr["term"][3]
-                self.data_path.latch_addr(SelOptions.ARG)
-                self.data_path.select_right(SelOptions.MEM)
-            elif instr["term"][5] is AddrMode.LIT:
-                self.data_path.l_arg = instr["term"][3]
                 self.data_path.select_right(SelOptions.ARG)
 
             if opcode is Opcode.ADD:
@@ -294,7 +300,7 @@ class ControlUnit:
             elif opcode in {Opcode.SUB, Opcode.CMP}:
                 self.data_path.calculate(ALUOperations.SUB)
             elif opcode is Opcode.MUL:
-                self.data_path.calculate(ALUOperations.MOV)
+                self.data_path.calculate(ALUOperations.MUL)
             elif opcode is Opcode.DIV:
                 self.data_path.calculate(ALUOperations.DIV)
 
@@ -302,11 +308,11 @@ class ControlUnit:
             self.tick()
 
             if not (opcode is Opcode.CMP):
-                if instr["term"][4] is AddrMode.REG:
-                    w_sel = instr["term"][2]
+                if instr["term"][3] is AddrMode.REG:
+                    w_sel = instr["term"][1]
                     self.data_path.latch_reg(w_sel, SelOptions.BUF)
-                elif instr["term"][4] is AddrMode.PTR:
-                    self.data_path.arg = instr["term"][2]
+                elif instr["term"][3] is AddrMode.PTR:
+                    self.data_path.arg = instr["term"][1]
                     self.data_path.latch_addr(SelOptions.ARG)
                     self.data_path.wr()
 
@@ -330,10 +336,7 @@ class ControlUnit:
             self.data_path.flag_zero()
         )
 
-        print(state)
-        print(self.data_path.memory)
-
-        return "{} {}"
+        return state
 
 
 def simulation(code, memory_size, input_buffer, limit):
@@ -353,9 +356,10 @@ def simulation(code, memory_size, input_buffer, limit):
     except EOFError:
         logging.warning('Input buffer is empty!')
     except StopIteration:
+        print("Iteration stopped (HLT)")
         pass
-    logging.info('output_buffer: %s', repr(''.join(data_path.output_buffer)))
-    return ''.join(data_path.output_buffer), instr_counter, control_unit.get_tick()
+    logging.info("output_buffer: %s", repr(''.join(data_path.output_buffer)))
+    return "".join(data_path.output_buffer), instr_counter, control_unit.get_tick()
 
 
 def main(args):
@@ -372,11 +376,12 @@ def main(args):
     output, instr_counter, ticks = simulation(code, memory_size=128, input_buffer=[], limit=1024)
 
     print(''.join(output))
-    print("instr_counter: ", instr_counter, "ticks:", ticks)
+    print("executed instructions:", instr_counter, "\nticks:", ticks, "\n--------------------")
+    print("output buffer:\n", output)
 
 
 if __name__ == '__main__':
-    #logging.getLogger().setLevel(logging.DEBUG)
+    logging.getLogger().setLevel(logging.DEBUG)
     #main(sys.argv[1:])
     main(["/home/yars/PycharmProjects/virtual_m/tests/test_instr.ins",
           "/home/yars/PycharmProjects/virtual_m/tests/test_instr.ins"])
