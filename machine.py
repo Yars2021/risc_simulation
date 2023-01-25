@@ -24,6 +24,7 @@ class ALUOperations(int, Enum):
     MUL = 2
     DIV = 3
     MOV = 4
+    MOD = 5
 
 
 class DataPath:
@@ -120,6 +121,8 @@ class DataPath:
             self.alu = self.left / self.right
         elif operation is ALUOperations.MOV:
             self.alu = self.left
+        elif operation is ALUOperations.MOD:
+            self.alu = self.left % self.right
 
     def output(self):
         self.output_buffer.append(chr(self.buf_reg))
@@ -267,7 +270,7 @@ class ControlUnit:
         
         op VAR VAR нет, т.к. архитектура не позволяет
         """
-        if opcode in {Opcode.ADD, Opcode.SUB, Opcode.MUL, Opcode.DIV, Opcode.CMP}:
+        if opcode in {Opcode.ADD, Opcode.SUB, Opcode.MUL, Opcode.DIV, Opcode.CMP, Opcode.MOD}:
             assert not (instr["term"][3] is AddrMode.PTR
                         and instr["term"][4] is AddrMode.PTR), "Operation VAR x VAR is not possible!"
             assert not (instr["term"][3] is AddrMode.LIT
@@ -303,6 +306,8 @@ class ControlUnit:
                 self.data_path.calculate(ALUOperations.MUL)
             elif opcode is Opcode.DIV:
                 self.data_path.calculate(ALUOperations.DIV)
+            elif opcode is Opcode.MOD:
+                self.data_path.calculate(ALUOperations.MOD)
 
             self.data_path.latch_buf()
             self.tick()
@@ -367,21 +372,22 @@ def main(args):
     code_file, input_file = args
 
     code = read_code(code_file)
+    input_buffer = []
     with open(input_file, encoding="utf-8") as file:
         input_text = file.read()
-        input_token = []
         for char in input_text:
-            input_token.append(char)
+            input_buffer.append(char)
+    input_buffer.append("\0")
 
-    output, instr_counter, ticks = simulation(code, memory_size=128, input_buffer=[], limit=1024)
+    output, instr_counter, ticks = simulation(code, memory_size=128, input_buffer=input_buffer, limit=1024)
 
-    print(''.join(output))
-    print("executed instructions:", instr_counter, "\nticks:", ticks, "\n--------------------")
-    print("output buffer:\n", output)
+    print()
+    print("".join(output))
+    print("\nexecuted instructions:", instr_counter, "\nticks:", ticks)
 
 
 if __name__ == '__main__':
     logging.getLogger().setLevel(logging.DEBUG)
     #main(sys.argv[1:])
-    main(["/home/yars/PycharmProjects/virtual_m/tests/test_instr.ins",
-          "/home/yars/PycharmProjects/virtual_m/tests/test_instr.ins"])
+    main(["/home/yars/PycharmProjects/virtual_m/tests/output_prob2.ins",
+          "/home/yars/PycharmProjects/virtual_m/tests/input_file.txt"])

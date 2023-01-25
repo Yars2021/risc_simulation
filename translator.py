@@ -5,6 +5,8 @@
 
 """Транслятор asm в машинный код"""
 
+import sys
+
 from isa import Opcode, AddrMode, args_number, write_code, Term
 
 # Словарь символов, непосредственно транслируемых в машинный код
@@ -18,6 +20,7 @@ symbol2opcode = {
     "sub": Opcode.SUB,
     "mul": Opcode.MUL,
     "div": Opcode.DIV,
+    "mod": Opcode.MOD,
     "cmp": Opcode.CMP,
     "jmp": Opcode.JMP,
     "jg": Opcode.JG,
@@ -42,7 +45,10 @@ register_symbols = {
     "%rcx": "%reg2",
     "%rdx": "%reg3",
     "%rsi": "%reg4",
-    "%rdi": "%reg5"
+    "%rdi": "%reg5",
+
+    "%rin": "%reg0",
+    "%rou": "%reg5"
 }
 
 registers2indexes = {
@@ -78,7 +84,7 @@ def translate(text):
         for i in range(len(tokens)):
             tokens[i] = str(tokens[i])
             if tokens[i][0] == ';':
-                tokens = tokens[0:i - 1]
+                tokens = tokens[0:i]
                 break
 
         assert len(tokens) <= 3, "Invalid command format, too many arguments!"
@@ -169,5 +175,6 @@ def main(args):
 
 
 if __name__ == '__main__':
-    main(["/home/yars/PycharmProjects/virtual_m/tests/test_code.asm",
-          "/home/yars/PycharmProjects/virtual_m/tests/test_instr.ins"])
+   # main(sys.argv[1:])
+    main(["/home/yars/PycharmProjects/virtual_m/tests/test_prob2.asm",
+          "/home/yars/PycharmProjects/virtual_m/tests/output_prob2.ins"])

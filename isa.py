@@ -17,6 +17,7 @@ class Opcode(str, Enum):
     SUB = "sub"
     MUL = "mul"
     DIV = "div"
+    MOD = "mod"
 
     CMP = "cmp"
     JMP = "jmp"
@@ -40,6 +41,7 @@ args_number = {
     Opcode.SUB.value: 2,
     Opcode.MUL.value: 2,
     Opcode.DIV.value: 2,
+    Opcode.MOD.value: 2,
     Opcode.CMP.value: 2,
     Opcode.JMP.value: 1,
     Opcode.JG.value: 1,
