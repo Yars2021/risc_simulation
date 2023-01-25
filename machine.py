@@ -124,8 +124,11 @@ class DataPath:
         elif operation is ALUOperations.MOD:
             self.alu = self.left % self.right
 
-    def output(self):
-        self.output_buffer.append(chr(self.buf_reg))
+    def output(self, as_char):
+        if as_char:
+            self.output_buffer.append(chr(self.buf_reg))
+        else:
+            self.output_buffer.append(str(self.buf_reg))
 
 
 class ControlUnit:
@@ -173,7 +176,19 @@ class ControlUnit:
             self.data_path.latch_buf()
             self.tick()
 
-            self.data_path.output()
+            self.data_path.output(True)
+            self.latch_ip(True)
+            self.tick()
+
+        if opcode is Opcode.WRN:
+            l_sel = 5  # Данные на вывод берутся из %rdi
+            self.data_path.read_l_reg(l_sel)
+            self.data_path.select_left(SelOptions.REG)
+            self.data_path.calculate(ALUOperations.MOV)
+            self.data_path.latch_buf()
+            self.tick()
+
+            self.data_path.output(False)
             self.latch_ip(True)
             self.tick()
 

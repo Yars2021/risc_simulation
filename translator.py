@@ -14,6 +14,7 @@ symbol2opcode = {
     "data": Opcode.DATA,
     "rd": Opcode.RD,
     "wr": Opcode.WR,
+    "wrn": Opcode.WRN,
     "nop": Opcode.NOP,
     "mov": Opcode.MOV,
     "add": Opcode.ADD,

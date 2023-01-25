@@ -1,6 +1,6 @@
 .data:
     result 0
-    limit 40
+    limit 4000000
 
 .start:
     mov %rax 1
@@ -14,16 +14,18 @@
         mov %rbx %rcx
 
         mod %rcx 2
-       ; cmp %rcx 0
-       ; jne .continue
+        cmp %rcx 0
+        jne .continue
 
         add result %rbx
 
         .continue:
             cmp %rbx limit
-            jnl .print_ans
+            jnl .exit_loop
             jmp .loop
 
-    .print_ans:
+    .exit_loop:
+        mov %rdi result
+        wrn
 
     hlt
