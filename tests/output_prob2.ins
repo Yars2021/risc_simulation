@@ -3,18 +3,38 @@
         "opcode": "jmp",
         "term": [
             0,
-            1,
+            3,
             0,
             "pointer",
             "literal"
         ]
     },
     {
-        "opcode": "mov",
+        "opcode": "data",
         "term": [
             1,
-            5,
-            10,
+            0,
+            0,
+            "literal",
+            "literal"
+        ]
+    },
+    {
+        "opcode": "data",
+        "term": [
+            2,
+            40,
+            0,
+            "literal",
+            "literal"
+        ]
+    },
+    {
+        "opcode": "mov",
+        "term": [
+            3,
+            0,
+            1,
             "register",
             "literal"
         ]
@@ -22,27 +42,107 @@
     {
         "opcode": "mov",
         "term": [
-            2,
             4,
-            3,
+            1,
+            1,
             "register",
             "literal"
         ]
     },
     {
-        "opcode": "mod",
+        "opcode": "mov",
         "term": [
-            3,
             5,
-            4,
+            2,
+            0,
             "register",
             "register"
         ]
     },
     {
+        "opcode": "add",
+        "term": [
+            6,
+            2,
+            1,
+            "register",
+            "register"
+        ]
+    },
+    {
+        "opcode": "mov",
+        "term": [
+            7,
+            0,
+            1,
+            "register",
+            "register"
+        ]
+    },
+    {
+        "opcode": "mov",
+        "term": [
+            8,
+            1,
+            2,
+            "register",
+            "register"
+        ]
+    },
+    {
+        "opcode": "mod",
+        "term": [
+            9,
+            2,
+            2,
+            "register",
+            "literal"
+        ]
+    },
+    {
+        "opcode": "add",
+        "term": [
+            10,
+            1,
+            1,
+            "pointer",
+            "register"
+        ]
+    },
+    {
+        "opcode": "cmp",
+        "term": [
+            11,
+            1,
+            2,
+            "register",
+            "pointer"
+        ]
+    },
+    {
+        "opcode": "jnl",
+        "term": [
+            12,
+            14,
+            0,
+            "pointer",
+            "literal"
+        ]
+    },
+    {
+        "opcode": "jmp",
+        "term": [
+            13,
+            5,
+            0,
+            "pointer",
+            "literal"
+        ]
+    },
+    {
         "opcode": "hlt",
         "term": [
-            4,
+            14,
             0,
             0,
             "literal",

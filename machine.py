@@ -128,7 +128,6 @@ class DataPath:
         self.output_buffer.append(chr(self.buf_reg))
 
 
-
 class ControlUnit:
     def __init__(self, data_path: DataPath):
         self.program = data_path.memory
@@ -295,7 +294,7 @@ class ControlUnit:
                 self.data_path.latch_addr(SelOptions.ARG)
                 self.data_path.select_right(SelOptions.MEM)
             elif instr["term"][4] is AddrMode.LIT:
-                self.data_path.l_arg = instr["term"][2]
+                self.data_path.r_arg = instr["term"][2]
                 self.data_path.select_right(SelOptions.ARG)
 
             if opcode is Opcode.ADD:
