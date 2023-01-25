@@ -87,6 +87,11 @@ class DataPath:
         return self.memory[self.addr_reg]["term"][1]
 
     def wr(self):
+        if self.buf_reg > 2147483647:
+            self.buf_reg -= 2147483647
+        if self.buf_reg < -2147483648:
+            self.buf_reg += 2147483648
+
         new_term = Term(self.memory[self.addr_reg]["term"][0],
                         self.buf_reg,
                         self.memory[self.addr_reg]["term"][2],
